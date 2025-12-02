@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finanzas Móvil Cloud</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <div class="app-layout">
+        
+        <div id="toast" class="toast">Mensaje...</div>
+
+        <nav class="top-nav">
+            <button id="tab-registro" class="btn-nav activo" type="button" onclick="cambiarPestana('registro')">📝 Registrar</button>
+            <button id="tab-dashboard" class="btn-nav" type="button" onclick="cambiarPestana('dashboard')">📊 Dashboard</button>
+        </nav>
+
+        <div id="vista-registro" class="vista fade-in">
+            <div class="card-formulario">
+                <h2>Nuevo Gasto</h2>
+                
+                <form id="form-gasto" onsubmit="event.preventDefault(); guardarGasto();">
+                    
+                    <div class="input-group">
+                        <label>Descripción</label>
+                        <input type="text" id="descripcion" placeholder="Ej: Almuerzo..." required>
+                    </div>
+
+                    <div class="grid-2-col">
+                        <div class="input-group">
+                            <label>Monto (S/)</label>
+                            <input type="number" id="monto" placeholder="0.00" step="0.01" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Categoría</label>
+                            <select id="categoria">
+                                <option value="Alimentación">🍔 Comida</option>
+                                <option value="Transporte">🚌 Pasaje</option>
+                                <option value="Servicios">🏠 Casa</option>
+                                <option value="Entretenimiento">🎉 Ocio</option>
+                                <option value="Salud">💊 Salud</option>
+                                <option value="Otros">📦 Otros</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="notas" placeholder="Nota opcional...">
+                    </div>
+
+                    <button type="submit" id="btn-agregar" class="btn-primary">Guardar en Drive</button>
+                </form>
+            </div>
+
+            <div class="lista-container">
+                <h3>Historial</h3>
+                <ul id="lista-gastos">
+                    <li style="justify-content: center; color: #94a3b8; padding: 20px;">Cargando...</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="vista-dashboard" class="vista oculto fade-in">
+            <div class="card-total">
+                <span>Total Nube</span>
+                <h1 id="total-monto">...</h1>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card-grafico">
+                    <h3>Categorías</h3>
+                    <div class="chart-box-pie"><canvas id="graficoCategorias"></canvas></div>
+                </div>
+                <div class="card-grafico">
+                    <h3>Diario</h3>
+                    <div class="chart-box-bar"><canvas id="graficoMensual"></canvas></div>
+                </div>
+                <div class="card-grafico full-width">
+                    <h3>Trimestre</h3>
+                    <div class="chart-box-bar"><canvas id="graficoTrimestral"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
