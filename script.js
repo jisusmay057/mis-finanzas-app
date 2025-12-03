@@ -1,256 +1,274 @@
-// ==========================================
-// 1. TU API
 const API_URL = "https://sheetdb.io/api/v1/1o3za5hmysvh8";
 
-// 2. CONFIGURACIÓN DE TUS TARJETAS (AQUÍ ESTÁ TU LÓGICA)
+// CONFIGURACIÓN DE TUS TARJETAS
 const MIS_TARJETAS = {
-    "BBVA": {
-        cierre: 10,   // Cierra el 10
-        pago: 5,      // Paga el 5
-        limite: 0,    // No especificaste límite, lo dejaremos infinito
-        meta: 0       // Sin meta específica
-    },
-    "Falabella": {
-        cierre: 20,   // Cierra el 20
-        pago: 15,     // Paga el 15
-        limite: 1900, // Saldo total
-        meta: 0.40    // 40% (Quieres usar max 760)
-    }
+    "BBVA": { cierre: 10, pago: 5, limite: 1000, meta: 1.0, inicio: 561.35 }, 
+    "Falabella": { cierre: 20, pago: 15, limite: 1900, meta: 0.40, inicio: 1834.87 } 
 };
-// ==========================================
 
+// VARIABLES DE APP
+let misGastos = [];
+let sueldoQuincenal = parseFloat(localStorage.getItem('miSueldoQuincenal')) || 0;
+let chartCategorias, chartMensual, chartBBVA, chartFalabella;
+
+// DOM
 const inputDesc = document.getElementById('descripcion');
-const inputMetodo = document.getElementById('metodo'); // Nuevo
+const inputMonto = document.getElementById('monto');
+const inputMetodo = document.getElementById('metodo');
 const inputCat = document.getElementById('categoria');
 const inputNotas = document.getElementById('notas');
-const inputMonto = document.getElementById('monto');
 const btnAgregar = document.getElementById('btn-agregar');
-const toast = document.getElementById('toast');
 const listaGastos = document.getElementById('lista-gastos');
-
-let misGastos = [];
-let chartCategorias;
 
 init();
 
-async function init() {
-    await cargarDatos();
-}
+async function init() { await cargarDatos(); }
 
+// --- NAVEGACIÓN ---
 window.cambiarPestana = function(pestana) {
-    document.getElementById('vista-registro').classList.toggle('oculto', pestana !== 'registro');
-    document.getElementById('vista-dashboard').classList.toggle('oculto', pestana !== 'dashboard');
-    document.getElementById('tab-registro').classList.toggle('activo', pestana === 'registro');
-    document.getElementById('tab-dashboard').classList.toggle('activo', pestana === 'dashboard');
-    if (pestana === 'dashboard') analizarTarjetas();
-}
+    ['registro', 'credito', 'dashboard'].forEach(p => {
+        document.getElementById(`vista-${p}`).classList.add('oculto');
+        document.getElementById(`tab-${p}`).classList.remove('activo');
+    });
+    document.getElementById(`vista-${pestana}`).classList.remove('oculto');
+    document.getElementById(`tab-${pestana}`).classList.add('activo');
 
-// LÓGICA DE CICLO DE FACTURACIÓN
-window.verificarTarjeta = function() {
-    const tarjeta = MIS_TARJETAS[inputMetodo.value];
-    const aviso = document.getElementById('aviso-ciclo');
-    
-    if (tarjeta) {
-        const hoy = new Date().getDate();
-        // Si hoy es mayor al día de cierre (Ej: Hoy 12, cierra 10)
-        if (hoy > tarjeta.cierre) {
-            aviso.innerText = `ℹ️ El corte fue el ${tarjeta.cierre}. Esto se paga el próximo mes.`;
-            aviso.style.display = 'block';
-        } else {
-            aviso.style.display = 'none';
-        }
-    } else {
-        aviso.style.display = 'none';
+    if (pestana === 'credito') {
+        calcularModuloCredito();
+    }
+    if (pestana === 'dashboard') {
+        calcularPresupuestoQuincenal();
+        actualizarGraficosDashboard();
     }
 }
 
+window.cambiarColorForm = function(tipo) {
+    const btn = document.getElementById('btn-agregar');
+    const cat = document.getElementById('grupo-categoria');
+    if(tipo === 'gasto') {
+        btn.style.backgroundColor = '#ff1744'; btn.innerText = 'REGISTRAR GASTO'; cat.style.opacity = '1';
+    } else {
+        btn.style.backgroundColor = '#00e676'; btn.innerText = 'REGISTRAR INGRESO / PAGO'; cat.style.opacity = '0.3';
+    }
+}
+
+// --- LÓGICA DE DATOS ---
 async function cargarDatos() {
     try {
         const res = await fetch(API_URL);
         const data = await res.json();
         misGastos = data.map(g => ({...g, monto: parseFloat(g.monto)})).sort((a,b) => b.id - a.id);
         renderizarLista();
-        mostrarNotificacion("☁️ Sincronizado");
-    } catch (error) {
-        listaGastos.innerHTML = '<li style="justify-content:center; color:#f87171;">Error de red</li>';
-    }
+    } catch (e) { console.error(e); }
 }
 
 async function guardarGasto() {
     const desc = inputDesc.value;
     const monto = parseFloat(inputMonto.value);
+    const tipo = document.querySelector('input[name="tipo"]:checked').value;
 
     if (!desc || isNaN(monto) || monto <= 0) return;
 
-    btnAgregar.innerText = "Procesando...";
-    btnAgregar.disabled = true;
+    btnAgregar.innerText = "PROCESANDO..."; btnAgregar.disabled = true;
 
     const nuevo = {
-        id: Date.now(),
-        fecha: new Date().toISOString(),
-        desc: desc,
-        categoria: inputCat.value,
-        metodo: inputMetodo.value, // GUARDAMOS EL MÉTODO
-        notas: inputNotas.value || '',
-        monto: monto
+        id: Date.now(), fecha: new Date().toISOString(), desc: desc,
+        categoria: inputCat.value, metodo: inputMetodo.value, tipo: tipo,
+        notas: inputNotas.value || '', monto: monto
     };
 
     try {
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(nuevo)
-        });
-
+        await fetch(API_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(nuevo) });
         misGastos.unshift(nuevo);
         renderizarLista();
-        
-        // Limpieza
-        inputDesc.value = ''; inputNotas.value = ''; inputMonto.value = ''; inputDesc.focus();
-        mostrarNotificacion("✅ Guardado");
-    } catch (e) {
-        alert("Error al guardar");
-    }
-    btnAgregar.innerText = "Guardar en Drive";
-    btnAgregar.disabled = false;
+        inputDesc.value = ''; inputMonto.value = '';
+        mostrarNotificacion(tipo === 'gasto' ? "GASTO REGISTRADO" : "OPERACIÓN EXITOSA");
+    } catch (e) { alert("Error al guardar"); }
+    btnAgregar.innerText = tipo === 'gasto' ? "REGISTRAR GASTO" : "REGISTRAR PAGO"; btnAgregar.disabled = false;
 }
 
 window.eliminar = async function(id) {
-    if(!confirm("¿Borrar?")) return;
+    if(!confirm("¿Eliminar registro?")) return;
     try {
         await fetch(`${API_URL}/id/${id}`, { method: 'DELETE' });
         misGastos = misGastos.filter(g => g.id != id);
         renderizarLista();
-        mostrarNotificacion("🗑️ Eliminado");
-    } catch (e) { alert("Error"); }
+    } catch(e) {}
 }
 
 function renderizarLista() {
     listaGastos.innerHTML = '';
-    
     misGastos.forEach(g => {
         let f = new Date(g.fecha);
-        let fechaStr = !isNaN(f) ? `${f.getDate()}/${f.getMonth()+1}` : 'Hoy';
-        
-        // Icono según método
-        let icono = '💵';
-        if (g.metodo === 'BBVA') icono = '🔵'; 
-        if (g.metodo === 'Falabella') icono = '🟢';
-
+        let fecha = !isNaN(f) ? `${f.getDate()}/${f.getMonth()+1}` : '--/--';
+        let esPago = g.tipo === 'pago';
+        let claseColor = esPago ? 'monto-pago' : 'monto-gasto';
+        let signo = esPago ? '+' : '-';
+        let icono = g.metodo === 'BBVA' ? '🔵' : (g.metodo === 'Falabella' ? '🟢' : '💵');
         listaGastos.innerHTML += `
             <li id="item-${g.id}">
                 <div style="display:flex; align-items:center;">
-                    <span class="icon-pay">${icono}</span>
-                    <div>
-                        <div class="desc">${g.desc}</div>
-                        <div class="subtext">${fechaStr} • ${g.categoria}</div>
-                    </div>
+                    <span style="font-size:1.2em; margin-right:10px;">${icono}</span>
+                    <div><div class="desc">${g.desc}</div><div class="subtext">${fecha} • ${g.metodo}</div></div>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-weight:bold;">S/ ${g.monto.toFixed(2)}</div>
-                    <small style="color:#f87171; cursor:pointer;" onclick="eliminar(${g.id})">✕</small>
-                </div>
+                <div style="text-align:right;"><div class="${claseColor}">${signo} S/ ${g.monto.toFixed(2)}</div>
+                <small onclick="eliminar(${g.id})" style="color:#586577; font-size:0.6em; cursor:pointer;">BORRAR</small></div>
             </li>`;
     });
 }
 
-// --- CEREBRO DE TARJETAS ---
-function analizarTarjetas() {
+// --- MÓDULO 1: CRÉDITO Y GRÁFICOS INDIVIDUALES ---
+function calcularModuloCredito() {
     const contenedor = document.getElementById('contenedor-tarjetas');
-    const totalDeudaElem = document.getElementById('total-deuda');
+    const totalGlobal = document.getElementById('deuda-total-global');
     contenedor.innerHTML = '';
     
-    let deudaTotal = 0;
-    const hoy = new Date();
-    const mesActual = hoy.getMonth(); 
+    let deudaTotalSum = 0;
 
-    // 1. Filtrar gastos de este mes (Ciclo activo)
-    // Nota: Esto es un cálculo simplificado basado en el mes calendario para la visualización rápida
-    const gastosDelMes = misGastos.filter(g => {
-        const f = new Date(g.fecha);
-        return f.getMonth() === mesActual;
-    });
-
-    // 2. Calcular por tarjeta
-    const tarjetas = ['BBVA', 'Falabella'];
-    
-    tarjetas.forEach(nombreCard => {
-        // Sumar gastos de esta tarjeta
-        const totalCard = gastosDelMes
-            .filter(g => g.metodo === nombreCard)
-            .reduce((sum, g) => sum + g.monto, 0);
-
-        deudaTotal += totalCard;
-
-        // Configuración de la tarjeta
+    // A. BARRAS DE PROGRESO
+    Object.keys(MIS_TARJETAS).forEach(nombreCard => {
         const config = MIS_TARJETAS[nombreCard];
-        let barraHTML = '';
+        const movs = misGastos.filter(g => g.metodo === nombreCard);
+        
+        let gastado = 0; let pagado = 0;
+        movs.forEach(g => { if (g.tipo === 'pago') pagado += g.monto; else gastado += g.monto; });
 
-        if (config.limite > 0) {
-            // Lógica para Falabella (Límite y Meta)
-            const metaDinero = config.limite * config.meta; // 1900 * 0.40 = 760
-            const porcentajeUso = (totalCard / config.limite) * 100;
-            
-            // Color de la barra
-            let colorBarra = '#10b981'; // Verde (Bien)
-            if (totalCard > metaDinero) colorBarra = '#ef4444'; // Rojo (Te pasaste del 40%)
-            else if (totalCard > (metaDinero * 0.8)) colorBarra = '#f59e0b'; // Naranja (Cerca)
+        let deudaActual = (config.inicio + gastado) - pagado;
+        if (deudaActual < 0) deudaActual = 0;
+        deudaTotalSum += deudaActual;
 
-            barraHTML = `
-                <div class="info-limite">
-                    <span>Usado: S/ ${totalCard.toFixed(2)}</span>
-                    <span>Meta (40%): S/ ${metaDinero.toFixed(0)}</span>
-                </div>
-                <div class="barra-fondo">
-                    <div class="barra-progreso" style="width: ${porcentajeUso}%; background: ${colorBarra};"></div>
-                </div>
-                <div style="text-align:right; font-size:0.7rem; color:#64748b; margin-top:2px;">
-                    Límite total: S/ ${config.limite}
-                </div>
-            `;
-        } else {
-            // Lógica para BBVA (Sin límite definido)
-            barraHTML = `
-                <div class="info-limite">
-                    <span>Gasto Mes: S/ ${totalCard.toFixed(2)}</span>
-                </div>
-                <div class="barra-fondo">
-                    <div class="barra-progreso" style="width: 100%; background: #3b82f6;"></div>
-                </div>
-            `;
-        }
+        // Render Barra
+        let disponible = config.limite - deudaActual;
+        let porcentaje = (deudaActual / config.limite) * 100;
+        let color = '#00e5ff'; // Cyan base
+        if (config.meta < 1.0 && deudaActual > (config.limite * config.meta)) color = '#ff1744'; // Rojo
 
         contenedor.innerHTML += `
             <div class="card-tarjeta">
-                <div style="display:flex; justify-content:space-between;">
-                    <h4>${nombreCard}</h4>
-                    <span style="font-size:0.8rem; color:#94a3b8;">Cierra: día ${config.cierre}</span>
-                </div>
-                <div class="fechas-pago">Pagar antes del: día ${config.pago}</div>
-                ${barraHTML}
-            </div>
-        `;
+                <h4>${nombreCard} <span>💳</span></h4>
+                <div class="fechas-pago">Cierre: ${config.cierre} | Pagar: ${config.pago}</div>
+                <div class="info-saldos"><span style="color:#ff1744">Deuda: S/ ${deudaActual.toFixed(2)}</span><span style="color:#00e5ff">Libre: S/ ${disponible.toFixed(2)}</span></div>
+                <div class="barra-fondo"><div class="barra-progreso" style="width: ${porcentaje}%; background: ${color}; box-shadow: 0 0 8px ${color};"></div></div>
+            </div>`;
     });
+    totalGlobal.innerText = `S/ ${deudaTotalSum.toFixed(2)}`;
 
-    totalDeudaElem.innerText = `S/ ${deudaTotal.toFixed(2)}`;
-    
-    // Gráfico Categorías
-    actualizarGraficoPastel();
+    // B. GRÁFICOS INDIVIDUALES (DONAS PEQUEÑAS)
+    generarGraficoTarjeta('BBVA', 'graficoBBVA', ['#2979ff', '#1565c0', '#64b5f6']);
+    generarGraficoTarjeta('Falabella', 'graficoFalabella', ['#00e676', '#00c853', '#69f0ae']);
 }
 
-function actualizarGraficoPastel() {
-    // Reutilizamos lógica simple para el pastel
+function generarGraficoTarjeta(nombreCard, canvasId, paleta) {
+    const ctx = document.getElementById(canvasId);
     let dataCat = {};
-    misGastos.forEach(g => dataCat[g.categoria] = (dataCat[g.categoria] || 0) + g.monto);
+    misGastos.filter(g => g.metodo === nombreCard && g.tipo === 'gasto').forEach(g => {
+        dataCat[g.categoria] = (dataCat[g.categoria] || 0) + g.monto;
+    });
+
+    // Guardamos referencia en variable global para poder destruir
+    if(nombreCard === 'BBVA') { if(chartBBVA) chartBBVA.destroy(); }
+    else { if(chartFalabella) chartFalabella.destroy(); }
+
+    const config = {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(dataCat),
+            datasets: [{ data: Object.values(dataCat), backgroundColor: paleta, borderWidth: 0 }]
+        },
+        options: { cutout: '65%', plugins: { legend: { display: false } } }
+    };
+
+    if(nombreCard === 'BBVA') chartBBVA = new Chart(ctx, config);
+    else chartFalabella = new Chart(ctx, config);
+}
+
+// --- MÓDULO 2: CALCULADORA QUINCENAL EXACTA ---
+window.configurarSueldo = function() {
+    let nuevo = prompt("Ingresa tu sueldo líquido quincenal (S/):", sueldoQuincenal);
+    if(nuevo) {
+        sueldoQuincenal = parseFloat(nuevo);
+        localStorage.setItem('miSueldoQuincenal', sueldoQuincenal);
+        calcularPresupuestoQuincenal();
+    }
+}
+
+function calcularPresupuestoQuincenal() {
+    const hoy = new Date();
+    const dia = hoy.getDate();
+    let inicioRango, finRango;
+
+    // Determinar Quincena (1-15 o 16-Fin)
+    if (dia <= 15) { inicioRango = 1; finRango = 15; }
+    else { inicioRango = 16; finRango = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate(); }
+
+    // Calcular Gasto en este rango
+    let gastadoQuincena = 0;
+    misGastos.filter(g => g.tipo === 'gasto').forEach(g => {
+        let d = new Date(g.fecha);
+        // Verificar si es del mes actual y está dentro del rango de días
+        if(d.getMonth() === hoy.getMonth() && d.getDate() >= inicioRango && d.getDate() <= finRango) {
+            gastadoQuincena += g.monto;
+        }
+    });
+
+    // Calcular Restante
+    let restante = sueldoQuincenal - gastadoQuincena;
+    let diasFaltantes = finRango - dia + 1; // +1 para incluir hoy
+    let diario = diasFaltantes > 0 ? (restante / diasFaltantes) : 0;
+
+    // Pintar HTML
+    document.getElementById('calc-ingreso').innerText = `S/ ${sueldoQuincenal.toFixed(2)}`;
+    document.getElementById('calc-gastado').innerText = `S/ ${gastadoQuincena.toFixed(2)}`;
     
+    const elRestante = document.getElementById('calc-restante');
+    elRestante.innerText = `S/ ${restante.toFixed(2)}`;
+    elRestante.style.color = restante > 0 ? '#00e676' : '#ff1744';
+
+    document.getElementById('calc-diario').innerText = `(S/ ${diario.toFixed(2)} por día restante)`;
+}
+
+// --- MÓDULO 3: DASHBOARD GENERAL ---
+function actualizarGraficosDashboard() {
+    let dataCat = {};
+    let dataDiaria = {};
+    const soloGastos = misGastos.filter(g => g.tipo !== 'pago');
+    const ordenados = [...soloGastos].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+    ordenados.forEach(g => {
+        dataCat[g.categoria] = (dataCat[g.categoria] || 0) + g.monto;
+        let d = new Date(g.fecha);
+        let hoy = new Date();
+        if (d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear()) {
+             let diaKey = `${d.getDate()}`;
+             dataDiaria[diaKey] = (dataDiaria[diaKey] || 0) + g.monto;
+        }
+    });
+
+    const commonOpts = { 
+        responsive: true, maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false }, ticks: { color: '#586577' } }, y: { display: false } }
+    };
+
     if (chartCategorias) chartCategorias.destroy();
     chartCategorias = new Chart(document.getElementById('graficoCategorias'), {
         type: 'doughnut',
         data: {
             labels: Object.keys(dataCat),
-            datasets: [{ data: Object.values(dataCat), backgroundColor: ['#F472B6', '#60A5FA', '#FBBF24', '#34D399', '#A78BFA', '#9CA3AF'], borderWidth: 0 }]
-        }, options: { plugins: { legend: { display: false } } }
+            datasets: [{ data: Object.values(dataCat), backgroundColor: ['#ff1744', '#00e5ff', '#ff9100', '#d500f9', '#00e676'], borderWidth: 0 }]
+        }, options: { cutout: '70%', plugins: { legend: { display: false } } }
+    });
+
+    if (chartMensual) chartMensual.destroy();
+    chartMensual = new Chart(document.getElementById('graficoMensual'), {
+        type: 'bar',
+        data: { labels: Object.keys(dataDiaria), datasets: [{ data: Object.values(dataDiaria), backgroundColor: '#2d3748', hoverBackgroundColor: '#00e5ff', borderRadius: 2 }] },
+        options: commonOpts
     });
 }
 
-function mostrarNotificacion(msj) { toast.innerText = msj; toast.classList.add('visible'); setTimeout(() => toast.classList.remove('visible'), 2000); }
+function mostrarNotificacion(msj) { 
+    const t = document.getElementById('toast'); 
+    t.innerText = msj; t.classList.add('visible'); 
+    setTimeout(() => t.classList.remove('visible'), 2000); 
+}
