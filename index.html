@@ -104,7 +104,7 @@
             <div class="card-neon calculator-box">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h3>CALCULADORA QUINCENAL</h3>
-                    <button onclick="configurarSueldo()" class="btn-mini">⚙️ Configurar Ingreso</button>
+                    <button onclick="configurarSueldo()" class="btn-mini">⚙️ Configurar</button>
                 </div>
                 
                 <div class="calc-grid">
@@ -125,19 +125,23 @@
                 </div>
             </div>
 
-            <h3 class="section-title">MACRO DATOS</h3>
+            <h3 class="section-title">ANÁLISIS MACRO</h3>
             
-            <div class="dashboard-grid">
-                <div class="card-neon">
-                    <h4>Gasto Global por Categoría</h4>
-                    <div class="chart-box-pie"><canvas id="graficoCategorias"></canvas></div>
-                </div>
+            <div class="card-neon">
+                <h4>Gasto Global por Categoría</h4>
+                <div class="chart-box-pie"><canvas id="graficoCategorias"></canvas></div>
+            </div>
 
-                <div class="card-neon">
-                    <h4>Tendencia Diaria</h4>
-                    <div class="chart-box-bar"><canvas id="graficoMensual"></canvas></div>
+            <h3 class="section-title" style="margin-top: 30px;">HISTORIAL DE CONSUMO DIARIO</h3>
+            <div class="card-neon">
+                <p style="font-size: 0.7rem; color: #718096; margin-bottom: 10px;">👇 Desliza para ver días anteriores. <span style="color:#ff1744">ROJO</span> = Pico Alto de Gasto.</p>
+                <div class="scroll-chart-wrapper">
+                    <div class="chart-long-container">
+                        <canvas id="graficoMensual"></canvas>
+                    </div>
                 </div>
             </div>
+
         </div>
 
     </div>

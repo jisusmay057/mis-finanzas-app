@@ -33,9 +33,7 @@ window.cambiarPestana = function(pestana) {
     document.getElementById(`vista-${pestana}`).classList.remove('oculto');
     document.getElementById(`tab-${pestana}`).classList.add('activo');
 
-    if (pestana === 'credito') {
-        calcularModuloCredito();
-    }
+    if (pestana === 'credito') calcularModuloCredito();
     if (pestana === 'dashboard') {
         calcularPresupuestoQuincenal();
         actualizarGraficosDashboard();
@@ -117,7 +115,7 @@ function renderizarLista() {
     });
 }
 
-// --- MÓDULO 1: CRÉDITO Y GRÁFICOS INDIVIDUALES ---
+// --- MÓDULO 1: CRÉDITO ---
 function calcularModuloCredito() {
     const contenedor = document.getElementById('contenedor-tarjetas');
     const totalGlobal = document.getElementById('deuda-total-global');
@@ -125,7 +123,6 @@ function calcularModuloCredito() {
     
     let deudaTotalSum = 0;
 
-    // A. BARRAS DE PROGRESO
     Object.keys(MIS_TARJETAS).forEach(nombreCard => {
         const config = MIS_TARJETAS[nombreCard];
         const movs = misGastos.filter(g => g.metodo === nombreCard);
@@ -137,11 +134,10 @@ function calcularModuloCredito() {
         if (deudaActual < 0) deudaActual = 0;
         deudaTotalSum += deudaActual;
 
-        // Render Barra
         let disponible = config.limite - deudaActual;
         let porcentaje = (deudaActual / config.limite) * 100;
-        let color = '#00e5ff'; // Cyan base
-        if (config.meta < 1.0 && deudaActual > (config.limite * config.meta)) color = '#ff1744'; // Rojo
+        let color = '#00e5ff'; 
+        if (config.meta < 1.0 && deudaActual > (config.limite * config.meta)) color = '#ff1744';
 
         contenedor.innerHTML += `
             <div class="card-tarjeta">
@@ -153,7 +149,6 @@ function calcularModuloCredito() {
     });
     totalGlobal.innerText = `S/ ${deudaTotalSum.toFixed(2)}`;
 
-    // B. GRÁFICOS INDIVIDUALES (DONAS PEQUEÑAS)
     generarGraficoTarjeta('BBVA', 'graficoBBVA', ['#2979ff', '#1565c0', '#64b5f6']);
     generarGraficoTarjeta('Falabella', 'graficoFalabella', ['#00e676', '#00c853', '#69f0ae']);
 }
@@ -165,16 +160,12 @@ function generarGraficoTarjeta(nombreCard, canvasId, paleta) {
         dataCat[g.categoria] = (dataCat[g.categoria] || 0) + g.monto;
     });
 
-    // Guardamos referencia en variable global para poder destruir
     if(nombreCard === 'BBVA') { if(chartBBVA) chartBBVA.destroy(); }
     else { if(chartFalabella) chartFalabella.destroy(); }
 
     const config = {
         type: 'doughnut',
-        data: {
-            labels: Object.keys(dataCat),
-            datasets: [{ data: Object.values(dataCat), backgroundColor: paleta, borderWidth: 0 }]
-        },
+        data: { labels: Object.keys(dataCat), datasets: [{ data: Object.values(dataCat), backgroundColor: paleta, borderWidth: 0 }] },
         options: { cutout: '65%', plugins: { legend: { display: false } } }
     };
 
@@ -182,7 +173,7 @@ function generarGraficoTarjeta(nombreCard, canvasId, paleta) {
     else chartFalabella = new Chart(ctx, config);
 }
 
-// --- MÓDULO 2: CALCULADORA QUINCENAL EXACTA ---
+// --- MÓDULO 2: CALCULADORA ---
 window.configurarSueldo = function() {
     let nuevo = prompt("Ingresa tu sueldo líquido quincenal (S/):", sueldoQuincenal);
     if(nuevo) {
@@ -197,59 +188,63 @@ function calcularPresupuestoQuincenal() {
     const dia = hoy.getDate();
     let inicioRango, finRango;
 
-    // Determinar Quincena (1-15 o 16-Fin)
     if (dia <= 15) { inicioRango = 1; finRango = 15; }
     else { inicioRango = 16; finRango = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate(); }
 
-    // Calcular Gasto en este rango
     let gastadoQuincena = 0;
     misGastos.filter(g => g.tipo === 'gasto').forEach(g => {
         let d = new Date(g.fecha);
-        // Verificar si es del mes actual y está dentro del rango de días
         if(d.getMonth() === hoy.getMonth() && d.getDate() >= inicioRango && d.getDate() <= finRango) {
             gastadoQuincena += g.monto;
         }
     });
 
-    // Calcular Restante
     let restante = sueldoQuincenal - gastadoQuincena;
-    let diasFaltantes = finRango - dia + 1; // +1 para incluir hoy
+    let diasFaltantes = finRango - dia + 1;
     let diario = diasFaltantes > 0 ? (restante / diasFaltantes) : 0;
 
-    // Pintar HTML
     document.getElementById('calc-ingreso').innerText = `S/ ${sueldoQuincenal.toFixed(2)}`;
     document.getElementById('calc-gastado').innerText = `S/ ${gastadoQuincena.toFixed(2)}`;
-    
     const elRestante = document.getElementById('calc-restante');
     elRestante.innerText = `S/ ${restante.toFixed(2)}`;
     elRestante.style.color = restante > 0 ? '#00e676' : '#ff1744';
-
     document.getElementById('calc-diario').innerText = `(S/ ${diario.toFixed(2)} por día restante)`;
 }
 
-// --- MÓDULO 3: DASHBOARD GENERAL ---
+// --- MÓDULO 3: GRÁFICO HISTÓRICO DESLIZABLE CON ALERTAS ---
 function actualizarGraficosDashboard() {
     let dataCat = {};
     let dataDiaria = {};
+
     const soloGastos = misGastos.filter(g => g.tipo !== 'pago');
+    // Ordenamos cronológicamente (antiguo a nuevo) para la línea de tiempo
     const ordenados = [...soloGastos].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
 
+    // 1. Agrupar Datos
     ordenados.forEach(g => {
         dataCat[g.categoria] = (dataCat[g.categoria] || 0) + g.monto;
         let d = new Date(g.fecha);
-        let hoy = new Date();
-        if (d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear()) {
-             let diaKey = `${d.getDate()}`;
-             dataDiaria[diaKey] = (dataDiaria[diaKey] || 0) + g.monto;
-        }
+        let diaKey = `${d.getDate()}/${d.getMonth()+1}`; // Formato Día/Mes
+        dataDiaria[diaKey] = (dataDiaria[diaKey] || 0) + g.monto;
     });
 
-    const commonOpts = { 
-        responsive: true, maintainAspectRatio: false, 
-        plugins: { legend: { display: false } },
-        scales: { x: { grid: { display: false }, ticks: { color: '#586577' } }, y: { display: false } }
-    };
+    // 2. Calcular Promedio para Alertas
+    const valoresDiarios = Object.values(dataDiaria);
+    const sumaTotal = valoresDiarios.reduce((a, b) => a + b, 0);
+    const promedio = sumaTotal / (valoresDiarios.length || 1);
+    const umbralAlerta = promedio * 1.5; // Si superas el 150% del promedio, es Alerta
 
+    // 3. Generar Colores Dinámicos
+    const coloresBarras = valoresDiarios.map(valor => {
+        return valor > umbralAlerta ? '#ff1744' : '#2d3748'; // Rojo si es pico, Gris si es normal
+    });
+
+    // 4. Configurar Ancho del Contenedor (Scroll Infinito)
+    const container = document.querySelector('.chart-long-container');
+    const minWidth = Math.max(800, Object.keys(dataDiaria).length * 50); // Mínimo 800px o 50px por barra
+    container.style.minWidth = `${minWidth}px`;
+
+    // 5. Renderizar Gráficos
     if (chartCategorias) chartCategorias.destroy();
     chartCategorias = new Chart(document.getElementById('graficoCategorias'), {
         type: 'doughnut',
@@ -262,8 +257,20 @@ function actualizarGraficosDashboard() {
     if (chartMensual) chartMensual.destroy();
     chartMensual = new Chart(document.getElementById('graficoMensual'), {
         type: 'bar',
-        data: { labels: Object.keys(dataDiaria), datasets: [{ data: Object.values(dataDiaria), backgroundColor: '#2d3748', hoverBackgroundColor: '#00e5ff', borderRadius: 2 }] },
-        options: commonOpts
+        data: { 
+            labels: Object.keys(dataDiaria), 
+            datasets: [{ 
+                data: valoresDiarios, 
+                backgroundColor: coloresBarras, // Colores dinámicos (Alerta Roja)
+                borderRadius: 4,
+                barPercentage: 0.8
+            }] 
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false }, ticks: { color: '#586577' } }, y: { display: false } }
+        }
     });
 }
 
@@ -272,3 +279,5 @@ function mostrarNotificacion(msj) {
     t.innerText = msj; t.classList.add('visible'); 
     setTimeout(() => t.classList.remove('visible'), 2000); 
 }
+
+window.verificarTarjeta = function() {}; // Placeholder simple
