@@ -1,20 +1,46 @@
-/* TEMA VISUAL DATA / POWER BI STYLE */
+/* TEMA VISUAL DATA - FINAL CLEAN */
 body { font-family: 'Inter', sans-serif; background-color: #0b0e14; color: #e0e0e0; margin: 0; display: flex; justify-content: center; padding: 10px; touch-action: manipulation; }
 .app-layout { width: 100%; max-width: 500px; position: relative; padding-bottom: 60px;}
 
-/* FUENTES */
-h1, h2, h3, h4, .btn-nav { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
+/* HEADER & LOGO */
+.app-header { display: flex; align-items: center; padding: 10px 0 15px 0; border-bottom: 1px solid #1f2937; margin-bottom: 20px; }
+.header-logo { 
+    height: 55px; 
+    width: auto; 
+    margin-right: 15px; 
+    border-radius: 12px; 
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); 
+    animation: pulseLogo 3s infinite ease-in-out; 
+}
+.header-title { 
+    font-family: 'Rajdhani', sans-serif; 
+    font-size: 1.8rem; 
+    font-weight: 800; 
+    margin: 0; 
+    letter-spacing: 2px; 
+    background: linear-gradient(135deg, #00e5ff, #d500f9); 
+    background-clip: text; /* Corrección advertencia amarilla */
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    color: transparent;
+}
+@keyframes pulseLogo { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.2); } }
 
-/* NAV */
+/* FUENTES Y NAV */
+h1, h2, h3, h4, .btn-nav { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
 .top-nav { display: flex; background: #191c24; padding: 5px; border-radius: 0px; margin-bottom: 20px; border-bottom: 2px solid #2d3748; }
 .btn-nav { flex: 1; border: none; background: transparent; padding: 12px 5px; color: #718096; font-weight: 700; font-size: 1rem; transition: 0.3s; }
 .btn-nav.activo { color: #00e5ff; border-bottom: 2px solid #00e5ff; background: linear-gradient(180deg, transparent, rgba(0, 229, 255, 0.1)); }
 
 /* TARJETAS NEON */
-.card-neon, .lista-container, .card-tarjeta, .kpi-card, .card-neon-small {
-    background: #191c24; padding: 15px; border-radius: 8px; margin-bottom: 15px;
-    border: 1px solid #2d3748; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
+.card-neon, .lista-container, .card-tarjeta, .kpi-card, .card-neon-small { background: #191c24; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #2d3748; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+
+/* CALCULADORA */
+.calculator-box { border-left: 4px solid #d500f9; } 
+.calc-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #a0aec0; }
+.highlight-box { background: rgba(213, 0, 249, 0.1); padding: 10px; border-radius: 5px; border: 1px dashed #d500f9; color: #fff; }
+.val-calc { font-family: 'Rajdhani', sans-serif; font-weight: bold; }
+.label-calc { font-size: 0.75rem; color: #718096; text-transform: uppercase; font-weight: 700; }
 
 /* SWITCH */
 .switch-tipo { display: flex; background: #111318; border-radius: 6px; padding: 3px; margin-bottom: 20px; }
@@ -23,28 +49,18 @@ h1, h2, h3, h4, .btn-nav { font-family: 'Rajdhani', sans-serif; text-transform: 
 #tipo-gasto:checked + .lbl-gasto { background-color: #2d1b22; color: #ff1744; border: 1px solid #ff1744; }
 #tipo-pago:checked + .lbl-pago { background-color: #162925; color: #00e676; border: 1px solid #00e676; }
 
-/* INPUTS */
+/* INPUTS Y BOTONES */
 .input-group { margin-bottom: 15px; }
 label { display: block; font-size: 0.75rem; color: #a0aec0; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;}
 input, select { width: 100%; padding: 12px; border: 1px solid #2d3748; border-radius: 4px; font-size: 16px; background: #111318; color: #fff; box-sizing: border-box; }
 input:focus, select:focus { border-color: #00e5ff; outline: none; box-shadow: 0 0 5px rgba(0, 229, 255, 0.3); }
-
-/* BOTONES */
 .btn-primary { width: 100%; padding: 15px; background: #ff1744; color: white; margin-top: 10px; border: none; border-radius: 4px; font-weight: 700; font-size: 1rem; letter-spacing: 1px; transition: 0.3s; }
 .btn-mini { background: #2d3748; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; }
 
-/* KPI CARD (DEUDA TOTAL) */
+/* KPI & TARJETAS */
 .kpi-card { text-align: center; border-left: 4px solid #ff1744; }
 .kpi-card span { font-size: 0.8rem; color: #a0aec0; }
 .kpi-card h1 { font-size: 2.5rem; margin: 5px 0 0 0; }
-
-/* CALCULADORA */
-.calculator-box { border-left: 4px solid #00e5ff; }
-.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.val-calc { font-size: 1.2rem; font-weight: bold; font-family: 'Rajdhani', sans-serif;}
-.label-calc { font-size: 0.7rem; color: #718096; text-transform: uppercase; }
-
-/* TARJETAS BARRA PROGRESO */
 .card-tarjeta h4 { font-size: 1rem; display: flex; justify-content: space-between; color: #fff; border-bottom: 1px solid #2d3748; padding-bottom: 5px; margin-bottom: 8px;}
 .fechas-pago { font-size: 0.7rem; color: #718096; margin-bottom: 8px; font-family: 'Inter'; }
 .barra-fondo { width: 100%; height: 8px; background: #111318; border-radius: 2px; overflow: hidden; margin-top: 5px; }
@@ -65,29 +81,16 @@ li { display: flex; justify-content: space-between; align-items: center; padding
 .monto-gasto { font-weight: bold; color: #ff1744; font-family: 'Rajdhani'; font-size: 1.1rem; }
 .monto-pago { font-weight: bold; color: #00e676; font-family: 'Rajdhani'; font-size: 1.1rem; }
 
-/* CHARTS & SCROLL */
+/* GRÁFICOS Y SCROLL */
 .grid-2-col-chart { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .chart-mini { height: 120px; position: relative; }
 .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .chart-box-pie { height: 220px; position: relative; }
-
-/* NUEVO: ESTILOS PARA SCROLL HORIZONTAL DE GRÁFICO */
-.scroll-chart-wrapper {
-    width: 100%;
-    overflow-x: auto; /* Permite deslizar */
-    padding-bottom: 10px; /* Espacio para la barra de scroll */
-}
-.chart-long-container {
-    height: 250px;
-    min-width: 800px; /* Forzamos que sea ancho para obligar el scroll */
-    position: relative;
-}
-
-/* Personalizar barra scroll */
+.scroll-chart-wrapper { width: 100%; overflow-x: auto; padding-bottom: 10px; }
+.chart-long-container { height: 250px; min-width: 800px; position: relative; }
 .scroll-chart-wrapper::-webkit-scrollbar { height: 6px; }
 .scroll-chart-wrapper::-webkit-scrollbar-track { background: #111318; border-radius: 3px; }
 .scroll-chart-wrapper::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
-
 .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; padding: 10px 20px; border-radius: 0; font-weight: 700; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 99; text-transform: uppercase; letter-spacing: 1px;}
 .toast.visible { opacity: 1; top: 30px; }
 .oculto { display: none; }

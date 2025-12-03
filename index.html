@@ -8,12 +8,21 @@
     <meta name="theme-color" content="#0b0e14">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 
     <div class="app-layout">
+        
+        <header class="app-header fade-in">
+            <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <div>
+                <h1 class="header-title">VISUAL DATA</h1>
+                <small style="color:#718096; letter-spacing: 2px; font-size: 0.7rem; text-transform: uppercase;">Finance OS</small>
+            </div>
+        </header>
+
         <div id="toast" class="toast">Mensaje...</div>
 
         <nav class="top-nav">
@@ -35,11 +44,11 @@
                 <form id="form-gasto" onsubmit="event.preventDefault(); guardarGasto();">
                     <div class="input-group">
                         <label>Descripción</label>
-                        <input type="text" id="descripcion" placeholder="Ej: Compras..." required>
+                        <input type="text" id="descripcion" placeholder="Ej: Supermercado..." required>
                     </div>
 
                     <div class="input-group">
-                        <label>Medio</label>
+                        <label>Medio de Pago</label>
                         <select id="metodo" onchange="verificarTarjeta()">
                             <option value="Efectivo/Debito">💵 Efectivo / Débito</option>
                             <option value="BBVA">💳 BBVA</option>
@@ -102,31 +111,38 @@
         <div id="vista-dashboard" class="vista oculto fade-in">
             
             <div class="card-neon calculator-box">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h3>CALCULADORA QUINCENAL</h3>
-                    <button onclick="configurarSueldo()" class="btn-mini">⚙️ Configurar</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#fff;">💰 SMART BUDGET</h3>
+                    <button onclick="configurarPresupuesto()" class="btn-mini">⚙️ Configurar</button>
                 </div>
                 
-                <div class="calc-grid">
-                    <div>
-                        <span class="label-calc">Ingreso Q.:</span>
-                        <div id="calc-ingreso" class="val-calc">S/ 0.00</div>
-                    </div>
-                    <div>
-                        <span class="label-calc">Gastado (1-15):</span>
-                        <div id="calc-gastado" class="val-calc text-warning">S/ 0.00</div>
-                    </div>
+                <div class="calc-row">
+                    <span>Ingreso Quincenal:</span>
+                    <span id="calc-ingreso" style="color:#fff;">S/ 0.00</span>
                 </div>
-                <hr style="border-color:#333;">
-                <div style="text-align:center;">
-                    <span class="label-calc">DISPONIBLE PARA GASTAR:</span>
-                    <h1 id="calc-restante" class="text-neon-green">S/ 0.00</h1>
-                    <small id="calc-diario" style="color:#aaa;">(S/ 0.00 por día restante)</small>
+                <div class="calc-row">
+                    <span>(-) Gastos Fijos/Pagos:</span>
+                    <span id="calc-fijos" style="color:#ff9100;">S/ 0.00</span>
+                </div>
+
+                <hr style="border-color:#2d3748; margin: 10px 0;">
+
+                <div class="calc-row highlight-box">
+                    <span>🔒 TU AHORRO (<span id="calc-porcentaje">0</span>%):</span>
+                    <span id="calc-ahorro" style="color:#d500f9; font-weight:bold;">S/ 0.00</span>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <span class="label-calc">YA GASTASTE EN CONSUMOS:</span>
+                    <div id="calc-gastado-consumo" class="val-calc text-warning" style="font-size:1rem; margin-bottom:5px;">S/ 0.00</div>
+                    
+                    <span class="label-calc">DISPONIBLE REAL PARA GASTAR:</span>
+                    <h1 id="calc-restante" class="text-neon-green" style="font-size: 2.2rem; margin:0;">S/ 0.00</h1>
+                    <small id="calc-diario" style="color:#aaa; display:block; margin-top:5px;">(S/ 0.00 diarios hasta fin de quincena)</small>
                 </div>
             </div>
 
             <h3 class="section-title">ANÁLISIS MACRO</h3>
-            
             <div class="card-neon">
                 <h4>Gasto Global por Categoría</h4>
                 <div class="chart-box-pie"><canvas id="graficoCategorias"></canvas></div>
@@ -134,14 +150,13 @@
 
             <h3 class="section-title" style="margin-top: 30px;">HISTORIAL DE CONSUMO DIARIO</h3>
             <div class="card-neon">
-                <p style="font-size: 0.7rem; color: #718096; margin-bottom: 10px;">👇 Desliza para ver días anteriores. <span style="color:#ff1744">ROJO</span> = Pico Alto de Gasto.</p>
+                <p style="font-size: 0.7rem; color: #718096; margin-bottom: 10px;">👇 Desliza para ver días anteriores. <span style="color:#ff1744">ROJO</span> = Pico Alto.</p>
                 <div class="scroll-chart-wrapper">
                     <div class="chart-long-container">
                         <canvas id="graficoMensual"></canvas>
                     </div>
                 </div>
             </div>
-
         </div>
 
     </div>
