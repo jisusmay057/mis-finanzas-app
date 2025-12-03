@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finanzas Móvil Cloud</title>
-    
+    <title>Finanzas Crédito Pro</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="estilos.css">
@@ -15,23 +13,32 @@
 <body>
 
     <div class="app-layout">
-        
         <div id="toast" class="toast">Mensaje...</div>
 
         <nav class="top-nav">
             <button id="tab-registro" class="btn-nav activo" type="button" onclick="cambiarPestana('registro')">📝 Registrar</button>
-            <button id="tab-dashboard" class="btn-nav" type="button" onclick="cambiarPestana('dashboard')">📊 Dashboard</button>
+            <button id="tab-dashboard" class="btn-nav" type="button" onclick="cambiarPestana('dashboard')">💳 Tarjetas</button>
         </nav>
 
         <div id="vista-registro" class="vista fade-in">
             <div class="card-formulario">
-                <h2>Nuevo Gasto</h2>
+                <h2>Nuevo Movimiento</h2>
                 
                 <form id="form-gasto" onsubmit="event.preventDefault(); guardarGasto();">
                     
                     <div class="input-group">
                         <label>Descripción</label>
-                        <input type="text" id="descripcion" placeholder="Ej: Almuerzo..." required>
+                        <input type="text" id="descripcion" placeholder="Ej: Cena, Compras..." required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>¿Cómo pagaste?</label>
+                        <select id="metodo" onchange="verificarTarjeta()">
+                            <option value="Efectivo/Debito">💵 Efectivo / Débito (Mi dinero)</option>
+                            <option value="BBVA">💳 Tarjeta BBVA (Crédito)</option>
+                            <option value="Falabella">💳 Tarjeta Falabella (Crédito)</option>
+                        </select>
+                        <small id="aviso-ciclo" style="color:#fbbf24; font-size:0.8em; display:none;">ℹ️ Esto entrará en el próximo ciclo.</small>
                     </div>
 
                     <div class="grid-2-col">
@@ -43,7 +50,7 @@
                             <label>Categoría</label>
                             <select id="categoria">
                                 <option value="Alimentación">🍔 Comida</option>
-                                <option value="Transporte">🚌 Pasaje</option>
+                                <option value="Transporte">🚌 Transporte</option>
                                 <option value="Servicios">🏠 Casa</option>
                                 <option value="Entretenimiento">🎉 Ocio</option>
                                 <option value="Salud">💊 Salud</option>
@@ -61,32 +68,32 @@
             </div>
 
             <div class="lista-container">
-                <h3>Historial</h3>
+                <h3>Últimos Movimientos</h3>
                 <ul id="lista-gastos">
-                    <li style="justify-content: center; color: #94a3b8; padding: 20px;">Cargando...</li>
+                    <li style="justify-content: center; color: #94a3b8; padding: 20px;">Cargando nube...</li>
                 </ul>
             </div>
         </div>
 
         <div id="vista-dashboard" class="vista oculto fade-in">
+            
             <div class="card-total">
-                <span>Total Nube</span>
-                <h1 id="total-monto">...</h1>
+                <span>Deuda Total Tarjetas (Mes Actual)</span>
+                <h1 id="total-deuda">S/ 0.00</h1>
             </div>
+
+            <div id="contenedor-tarjetas">
+                </div>
 
             <div class="dashboard-grid">
                 <div class="card-grafico">
-                    <h3>Categorías</h3>
+                    <h3>Gasto vs Categoría</h3>
                     <div class="chart-box-pie"><canvas id="graficoCategorias"></canvas></div>
                 </div>
-                <div class="card-grafico">
-                    <h3>Diario</h3>
-                    <div class="chart-box-bar"><canvas id="graficoMensual"></canvas></div>
-                </div>
-                <div class="card-grafico full-width">
-                    <h3>Trimestre</h3>
-                    <div class="chart-box-bar"><canvas id="graficoTrimestral"></canvas></div>
-                </div>
+            </div>
+            
+            <div style="text-align:center; margin-top:20px; color:#64748b; font-size:0.8em;">
+                Los datos de facturación se calculan según tu fecha de cierre.
             </div>
         </div>
 
